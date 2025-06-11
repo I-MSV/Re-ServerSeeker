@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "reserverseeker",
+  "version": "${version}",
+  "name": "Re:ServerSeeker",
+  "description": "Rework for goated server seeker that got removed... It's worse in every way but at least it works",
+  "authors": [
+    "DAMcraft",
+    "ApetiogiDISASTER"
+  ],
+  "contact": {
+    "repo": "N/A",
+    "discord": "N/A",
+    "homepage": "N/A",
+    "issues": "N/A",
+    "sources": "N/A"
+  },
+  "icon": "assets/serverseeker/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "meteor": [
+      "fi.apetiogi.reserverseeker.ReServerSeeker"
+    ]
+  },
+  "mixins": [
+    "reserverseeker.mixins.json"
+  ],
+  "custom": {
+    "meteor-client:color": "153,45,34",
+    "github:sha": "${gh_hash}",
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "N/A"
+      }
+    }
+  },
+  "depends": {
+    "java": ">=21",
+    "minecraft": ">=1.21"
+  },
+  "recommends": {
+    "meteor-client": "*"
+  }
+}

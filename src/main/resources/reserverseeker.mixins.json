@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "package": "fi.apetiogi.reserverseeker.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "MultiplayerScreenAccessor",
+    "MultiplayerScreenMixin",
+    "ConnectScreenAccessor",
+    "ConnectScreenMixin",
+    "DisconnectedScreenMixin",
+    "ServerEntryMixin",
+    "SystemsMixin",
+    "TitleScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "HandshakeC2SAccessor",
+    "HandshakeC2SMixin"
+  ]
+}
