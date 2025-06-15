@@ -22,7 +22,7 @@ public class MeteorToken {
         }
 
         public void writeFile(String username, String directory) {
-            String configPath = "Re-Scanner" + getCacheFileName(username);
+            String configPath = "Re-Scanner/" + getCacheFileName(username);
             File tokenFile = new File(directory, configPath);
 
             try (FileWriter writer = new FileWriter(tokenFile)) {
