@@ -411,7 +411,7 @@ public class FindNewServersScreen extends WindowScreen {
                 String ip = MultiplayerScreenUtil.cleanIp(server.ip, server.port);
 
                 // Add server to list
-                MultiplayerScreenUtil.addNameIpToServerList(multiplayerScreen, "ServerSeeker " + ip, ip, false);
+                MultiplayerScreenUtil.addNameIpToServerList(multiplayerScreen, "Re:SS " + ip, ip, false);
             }
             MultiplayerScreenUtil.saveList(multiplayerScreen);
 
@@ -447,7 +447,7 @@ public class FindNewServersScreen extends WindowScreen {
             WButton addServerButton = theme.button("Add Server");
             addServerButton.action = () -> {
                 System.out.println(multiplayerScreen.getServerList() == null);
-                ServerInfo info = new ServerInfo("Re:ServerSeeker " + serverIP, serverIP, ServerInfo.ServerType.OTHER);
+                ServerInfo info = new ServerInfo("Re:SS " + serverIP, serverIP, ServerInfo.ServerType.OTHER);
                 MultiplayerScreenUtil.addInfoToServerList(multiplayerScreen, info);
                 addServerButton.visible = false;
             };

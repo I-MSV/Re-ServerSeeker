@@ -148,7 +148,7 @@ public class FindPlayerScreen extends WindowScreen {
 
                 WButton addServerButton = theme.button("Add Server");
                 addServerButton.action = () -> {
-                    ServerInfo info = new ServerInfo("ServerSeeker " + serverIP + " (Player: " + playerName + ")", serverIP, ServerInfo.ServerType.OTHER);
+                    ServerInfo info = new ServerInfo("Re:SS " + serverIP + " (Player: " + playerName + ")", serverIP, ServerInfo.ServerType.OTHER);
                     MultiplayerScreenUtil.addInfoToServerList(multiplayerScreen, info);
                     addServerButton.visible = false;
                 };
@@ -174,7 +174,7 @@ public class FindPlayerScreen extends WindowScreen {
         for (WhereisResponse.Record record : records) {
             String serverIP = record.ip + ":" + record.port;
             String playerName = record.name;
-            ServerInfo info = new ServerInfo("ServerSeeker " + serverIP + " (Player: " + playerName + ")", serverIP, ServerInfo.ServerType.OTHER);
+            ServerInfo info = new ServerInfo("Re:SS " + serverIP + " (Player: " + playerName + ")", serverIP, ServerInfo.ServerType.OTHER);
             MultiplayerScreenUtil.addInfoToServerList(multiplayerScreen, info, false);
         }
         MultiplayerScreenUtil.saveList(multiplayerScreen);

@@ -1,5 +1,6 @@
 package fi.apetiogi.reserverseeker.gui;
 
+import fi.apetiogi.reserverseeker.gui.Bot.ServerRescan;
 import fi.apetiogi.reserverseeker.utils.MultiplayerScreenUtil;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;
@@ -20,6 +21,7 @@ public class ServerSeekerScreen extends WindowScreen {
         WHorizontalList widgetList = add(theme.horizontalList()).expandX().widget();
         WButton newServersButton = widgetList.add(this.theme.button("Find new servers")).expandX().widget();
         WButton findPlayersButton = widgetList.add(this.theme.button("Search players")).expandX().widget();
+        WButton experimentalButton = widgetList.add(this.theme.button("Rescan servers")).expandX().widget();
         WButton cleanUpServersButton = widgetList.add(this.theme.button("Clean up")).expandX().widget();
         newServersButton.action = () -> {
             if (this.client == null) return;
@@ -29,11 +31,15 @@ public class ServerSeekerScreen extends WindowScreen {
             if (this.client == null) return;
             this.client.setScreen(new FindPlayerScreen(this.multiplayerScreen));
         };
+        experimentalButton.action = () -> {
+            if (this.client == null) return;
+            this.client.setScreen(new ServerRescan(this.multiplayerScreen));
+        };
         cleanUpServersButton.action = () -> {
             if (this.client == null) return;
             clear();
             add(theme.label("Are you sure you want to clean up your server list?"));
-            add(theme.label("This will remove all servers that start with \"ServerSeeker\""));
+            add(theme.label("This will remove all servers that start with \"Re:SS\""));
             WHorizontalList buttonList = add(theme.horizontalList()).expandX().widget();
             WButton backButton = buttonList.add(theme.button("Back")).expandX().widget();
             backButton.action = this::reload;
@@ -46,7 +52,7 @@ public class ServerSeekerScreen extends WindowScreen {
         if (this.client == null) return;
 
         for (int i = 0; i < this.multiplayerScreen.getServerList().size(); i++) {
-            if (this.multiplayerScreen.getServerList().get(i).name.startsWith("ServerSeeker")) {
+            if (this.multiplayerScreen.getServerList().get(i).name.startsWith("Re:SS")) {
                 this.multiplayerScreen.getServerList().remove(this.multiplayerScreen.getServerList().get(i));
                 i--;
             }
