@@ -22,7 +22,7 @@ public class MeteorToken {
         }
 
         public void writeFile(String username, String directory) {
-            String configPath = "Re-ServerSeeker/scripts/" + getCacheFileName(username);
+            String configPath = "Re-Scanner" + getCacheFileName(username);
             File tokenFile = new File(directory, configPath);
 
             try (FileWriter writer = new FileWriter(tokenFile)) {
@@ -34,8 +34,10 @@ public class MeteorToken {
         }
 
         public void clearFile(String username, String directory) {
-            String configPath = "Re-ServerSeeker/scripts/" + getCacheFileName(username);
+            String configPath = "Re-Scanner/" + getCacheFileName(username);
             File tokenFile = new File(directory, configPath);
+
+            if (!tokenFile.exists()) return;
 
             try {
                 tokenFile.delete();

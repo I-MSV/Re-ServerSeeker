@@ -54,6 +54,10 @@ public class ServerRescan extends WindowScreen {
                 case Rename -> false;
             };
         }
+
+        public static WhitelistIntent fromBool(Boolean bool) {
+            return bool == null ? Nothing : bool ? DeleteWhitelisted : Rename;
+        }
     }
 
     public enum CrackedIntent {
@@ -67,6 +71,10 @@ public class ServerRescan extends WindowScreen {
                 case DeleteNonCracked -> true;
                 case Rename -> false;
             };
+        }
+
+        public static CrackedIntent fromBool(Boolean bool) {
+            return bool == null ? Nothing : bool ? DeleteNonCracked : Rename;
         }
     }
 
@@ -112,8 +120,7 @@ public class ServerRescan extends WindowScreen {
     @Override
     public void initWidgets() {
         loadConfig();
-        loadSettings();
-        onClosed(this::saveSettings);
+        onClosed(this::saveConfig);
 
         add(theme.label("Expect possible crashes / server list deletion"));
         settingsContainer = add(theme.verticalList()).widget();
@@ -161,6 +168,7 @@ public class ServerRescan extends WindowScreen {
 
         else {
             noteLabel.set("Scanning without online account, disabling whitelist check");
+            loadedConfig.username = session.getUsername();
             whitelistSetting.set(WhitelistIntent.Nothing);
         }
 
@@ -183,8 +191,8 @@ public class ServerRescan extends WindowScreen {
                         rescanButton.set(outputLine);
                     }
 
-                    int exitCode = process.waitFor();
-                    System.out.println("DONE");
+                    process.waitFor();
+                    storedToken.clearFile(loadedConfig.username, userDir);
                 }
                 catch (IOException | InterruptedException e) {
                     e.printStackTrace();
@@ -202,6 +210,10 @@ public class ServerRescan extends WindowScreen {
         File configFile = new File(userDir, configPath);
         try {
             loadedConfig = gson.fromJson(new FileReader(configFile), Config.class);
+            //also set the settings to the loaded values
+            whitelistSetting.set(WhitelistIntent.fromBool(loadedConfig.whitelistIntent));
+            crackedSetting.set(CrackedIntent.fromBool(loadedConfig.crackedIntent));
+            offlineSetting.set(loadedConfig.deleteOffline);
         }
         catch (Exception e) {
             loadedConfig = new Config();
@@ -225,21 +237,11 @@ public class ServerRescan extends WindowScreen {
         }
     }
 
-
-    public void saveSettings() {
-        savedSettings = sg.toTag();
-    }
-
-    public void loadSettings() {
-        if (savedSettings == null) return;
-        sg.fromTag(savedSettings);
-    }
-
     public void resetSettings() {
         for (Setting<?> setting : sg) {
             setting.reset();
         }
-        saveSettings();
+        saveConfig();
         reload();
     }
 }
