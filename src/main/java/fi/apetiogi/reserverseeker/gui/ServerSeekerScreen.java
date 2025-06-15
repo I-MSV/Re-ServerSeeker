@@ -25,17 +25,9 @@ public class ServerSeekerScreen extends WindowScreen {
         WHorizontalList widgetList = add(theme.horizontalList()).expandX().widget();
         WButton newServersButton = widgetList.add(this.theme.button("Find new servers")).expandX().widget();
         WButton findPlayersButton = widgetList.add(this.theme.button("Search players")).expandX().widget();
-
-        if (new File(userDir, "Re-Scanner").exists()) {
-            WButton experimentalButton = widgetList.add(this.theme.button("Rescan servers")).expandX().widget();
-
-            experimentalButton.action = () -> {
-                if (this.client == null) return;
-                this.client.setScreen(new ServerRescan(this.multiplayerScreen));
-            };
-        }
-
+        WButton experimentalButton = widgetList.add(this.theme.button("Rescan servers")).expandX().widget();
         WButton cleanUpServersButton = widgetList.add(this.theme.button("Clean up")).expandX().widget();
+
         newServersButton.action = () -> {
             if (this.client == null) return;
             this.client.setScreen(new FindNewServersScreen(this.multiplayerScreen));
@@ -44,6 +36,12 @@ public class ServerSeekerScreen extends WindowScreen {
             if (this.client == null) return;
             this.client.setScreen(new FindPlayerScreen(this.multiplayerScreen));
         };
+
+        experimentalButton.action = () -> {
+            if (this.client == null) return;
+            this.client.setScreen(new ServerRescan(this.multiplayerScreen));
+        };
+        experimentalButton.visible = new File(userDir, "Re-Scanner").exists();
 
         cleanUpServersButton.action = () -> {
             if (this.client == null) return;

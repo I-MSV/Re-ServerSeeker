@@ -17,7 +17,6 @@ import meteordevelopment.meteorclient.gui.utils.SettingsWidgetFactory;
 import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.item.Items;
 
 import org.slf4j.Logger;

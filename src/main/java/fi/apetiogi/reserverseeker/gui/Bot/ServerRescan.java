@@ -3,7 +3,6 @@ package fi.apetiogi.reserverseeker.gui.Bot;
 import static fi.apetiogi.reserverseeker.ReServerSeeker.gson;
 import static fi.apetiogi.reserverseeker.ReServerSeeker.userDir;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -15,9 +14,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import fi.apetiogi.reserverseeker.gui.Bot.MeteorToken.*;
-import fi.apetiogi.reserverseeker.gui.FindNewServersScreen.Cracked;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;
+import meteordevelopment.meteorclient.gui.widgets.WLabel;
 import meteordevelopment.meteorclient.gui.widgets.containers.WContainer;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.settings.BoolSetting;
@@ -30,13 +29,17 @@ import meteordevelopment.meteorclient.systems.accounts.Accounts;
 import meteordevelopment.meteorclient.systems.accounts.types.MicrosoftAccount;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.session.Session;
+import net.minecraft.nbt.NbtCompound;
 
 public class ServerRescan extends WindowScreen {
+    public static NbtCompound savedSettings;
+
     public class Config {
         public String username;
         public String saveDirectory;
         public Boolean whitelistIntent = null;
         public Boolean crackedIntent = null;
+        public boolean deleteOffline = true;
     }
 
     public enum WhitelistIntent {
@@ -71,7 +74,8 @@ public class ServerRescan extends WindowScreen {
     private final SettingGroup sg = settings.getDefaultGroup();
     WContainer settingsContainer;
     MultiplayerScreen multiplayerScreen;
-    WButton whitelistButton;
+    WButton rescanButton;
+    WLabel noteLabel;
     Config loadedConfig;
     
     //yes i will keep using this enum everywhere.
@@ -91,6 +95,14 @@ public class ServerRescan extends WindowScreen {
         .build()
     );
 
+    private final Setting<Boolean> offlineSetting = sg.add(new BoolSetting.Builder()
+        .name("delete-offline-servers")
+        .description("Whether to delete timed out servers")
+        .defaultValue(true)
+        .onChanged(bool -> { loadedConfig.deleteOffline = bool; })
+        .build()
+    );
+
 
     public ServerRescan(MultiplayerScreen multiplayerScreen) {
         super(GuiThemes.get(), "Server Rescan");
@@ -100,55 +112,61 @@ public class ServerRescan extends WindowScreen {
     @Override
     public void initWidgets() {
         loadConfig();
+        loadSettings();
+        onClosed(this::saveSettings);
 
-        add(theme.label("Not well tested, expect possible crashes / server list deletion"));
+        add(theme.label("Expect possible crashes / server list deletion"));
         settingsContainer = add(theme.verticalList()).widget();
         settingsContainer.add(theme.settings(settings));
-
-        add(theme.label(String.format("Note: This will use \"%s\" for joining", this.client.getSession().getUsername())));
         
-        whitelistButton = add(theme.button("Rescan Server List")).expandX().widget();
-        whitelistButton.action = () -> {
+        noteLabel = add(theme.label(String.format("Note: This will use \"%s\" for joining", this.client.getSession().getUsername()))).widget();
+        
+        add(theme.button("Reset all")).expandX().widget().action = this::resetSettings;
+        rescanButton = add(theme.button("Rescan Server List")).expandX().widget();
+        rescanButton.action = () -> {
             StartRescan();
         };
     }
 
     private void StartRescan() {
-        String indexPath = "Re-ServerSeeker/Re-Scanner/index.js";
+        String indexPath = "Re-Scanner/index.js";
         File scriptFile = new File(userDir, indexPath);
         if (!scriptFile.exists()) {
-            whitelistButton.set("Script not found.");
+            rescanButton.set("Script not found.");
             return;
         }
+
         Session session = this.client.getSession();
-
-        if (session.getAccountType() != Session.AccountType.MSA) {
-            whitelistButton.set("Please login with a microsoft account.");
-            return;
-        }
-
         MCAWrapper storedToken = new MCAWrapper();
-        storedToken.mca = new MCAWrapper.MCA();
 
-        Boolean found = false;
-        for (Account<?> acc : Accounts.get()) {
-            String name = acc.getUsername();
-            if (name == session.getUsername() && acc instanceof MicrosoftAccount msAcc) {
-                storedToken.mca.access_token = MeteorToken.getAccessToken(msAcc);
-                loadedConfig.username = name;
-                found = true;
-                break;
+        if (session.getAccountType() == Session.AccountType.MSA) {
+            storedToken.mca = new MCAWrapper.MCA();
+
+            Boolean found = false;
+            for (Account<?> acc : Accounts.get()) {
+                String name = acc.getUsername();
+                if (name == session.getUsername() && acc instanceof MicrosoftAccount msAcc) {
+                    storedToken.mca.access_token = MeteorToken.getAccessToken(msAcc);
+                    loadedConfig.username = name;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                rescanButton.set("Failed to find logged microsoft account");
+                return;
             }
         }
 
-        if (!found) {
-            whitelistButton.set("Failed to find logged microsoft account");
-            return;
+        else {
+            noteLabel.set("Scanning without online account, disabling whitelist check");
+            whitelistSetting.set(WhitelistIntent.Nothing);
         }
 
-        whitelistButton.set("Saving config");
+        rescanButton.set("Saving config");
 
-        storedToken.writefile(loadedConfig.username, userDir);
+        storedToken.writeFile(loadedConfig.username, userDir);
         saveConfig();
 
         ProcessBuilder pb = new ProcessBuilder("node", "index.js");
@@ -162,29 +180,25 @@ public class ServerRescan extends WindowScreen {
                 try {
                     while ((line = reader.readLine()) != null) {
                         final String outputLine = line;
-                        whitelistButton.set(outputLine);
+                        rescanButton.set(outputLine);
                     }
+
+                    int exitCode = process.waitFor();
+                    System.out.println("DONE");
                 }
-                catch (IOException e) {
+                catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
             }).start();
         }
         catch (Exception e) {
-            whitelistButton.set("Error:" + e.getMessage());
+            rescanButton.set("Error:" + e.getMessage());
             System.err.println(e.getMessage());
         }
     }
 
     private void loadConfig() {
-        String indexPath = "Re-ServerSeeker/Re-Scanner/index.js";
-        String configPath = "Re-ServerSeeker/Re-Scanner/config.json";
-        File scriptFile = new File(userDir, indexPath);
-        if (!scriptFile.exists()) {
-            whitelistButton.set("Failed to find config.");
-            return;
-        }
-
+        String configPath = "Re-Scanner/config.json";
         File configFile = new File(userDir, configPath);
         try {
             loadedConfig = gson.fromJson(new FileReader(configFile), Config.class);
@@ -195,7 +209,7 @@ public class ServerRescan extends WindowScreen {
     }
 
     private void saveConfig() {
-        String configPath = "Re-ServerSeeker/Re-Scanner/config.json";
+        String configPath = "Re-Scanner/config.json";
         File configFile = new File(userDir, configPath);
 
         //set values with no settings here
@@ -206,8 +220,26 @@ public class ServerRescan extends WindowScreen {
             withNulls.toJson(loadedConfig, writer);
         }
         catch (Exception e) {
-            whitelistButton.set("Failed to save config.");
+            rescanButton.set("Failed to save config.");
             System.err.println(e.getMessage());
         }
+    }
+
+
+    public void saveSettings() {
+        savedSettings = sg.toTag();
+    }
+
+    public void loadSettings() {
+        if (savedSettings == null) return;
+        sg.fromTag(savedSettings);
+    }
+
+    public void resetSettings() {
+        for (Setting<?> setting : sg) {
+            setting.reset();
+        }
+        saveSettings();
+        reload();
     }
 }

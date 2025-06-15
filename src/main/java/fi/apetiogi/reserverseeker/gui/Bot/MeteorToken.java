@@ -21,12 +21,24 @@ public class MeteorToken {
             private long obtainedOn = 9999999999999L;// this too...
         }
 
-        public void writefile(String username, String directory) {
+        public void writeFile(String username, String directory) {
             String configPath = "Re-ServerSeeker/scripts/" + getCacheFileName(username);
             File tokenFile = new File(directory, configPath);
 
             try (FileWriter writer = new FileWriter(tokenFile)) {
                 gson.toJson(this, writer);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void clearFile(String username, String directory) {
+            String configPath = "Re-ServerSeeker/scripts/" + getCacheFileName(username);
+            File tokenFile = new File(directory, configPath);
+
+            try {
+                tokenFile.delete();
             }
             catch (Exception e) {
                 e.printStackTrace();
