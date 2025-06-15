@@ -31,6 +31,7 @@ public class ReServerSeeker extends MeteorAddon {
 
     public static final String api_servers = "https://api.cornbread2100.com/servers?";
     public static final String api_players = "https://api.cornbread2100.com/playerHistory?";
+    public static final String userDir = System.getProperty("user.dir");
 
     public static final Gson gson = new Gson();
 

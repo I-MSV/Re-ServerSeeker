@@ -1,6 +1,7 @@
 package fi.apetiogi.reserverseeker.gui.Bot;
 
 import static fi.apetiogi.reserverseeker.ReServerSeeker.gson;
+import static fi.apetiogi.reserverseeker.ReServerSeeker.userDir;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -31,13 +32,11 @@ import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.session.Session;
 
 public class ServerRescan extends WindowScreen {
-    private static final String userDir = System.getProperty("user.dir");
-
     public class Config {
         public String username;
         public String saveDirectory;
-        public Boolean removeWhitelisted = null;
-        public Boolean removeNonCracked = null;
+        public Boolean whitelistIntent = null;
+        public Boolean crackedIntent = null;
     }
 
     public enum WhitelistIntent {
@@ -80,7 +79,7 @@ public class ServerRescan extends WindowScreen {
         .name("whitelist-intent")
         .description("What to do with scanned whitelisted servers")
         .defaultValue(WhitelistIntent.Nothing)
-        .onChanged(bool -> { loadedConfig.removeWhitelisted = bool.toBoolOrNull(); })
+        .onChanged(bool -> { loadedConfig.whitelistIntent = bool.toBoolOrNull(); })
         .build()
     );
 
@@ -88,7 +87,7 @@ public class ServerRescan extends WindowScreen {
         .name("cracked-intent")
         .description("What to do with scanned cracked servers")
         .defaultValue(CrackedIntent.Nothing)
-        .onChanged(bool -> { loadedConfig.removeNonCracked = bool.toBoolOrNull(); })
+        .onChanged(bool -> { loadedConfig.crackedIntent = bool.toBoolOrNull(); })
         .build()
     );
 
@@ -115,7 +114,7 @@ public class ServerRescan extends WindowScreen {
     }
 
     private void StartRescan() {
-        String indexPath = "Re-ServerSeeker/scripts/index.js";
+        String indexPath = "Re-ServerSeeker/Re-Scanner/index.js";
         File scriptFile = new File(userDir, indexPath);
         if (!scriptFile.exists()) {
             whitelistButton.set("Script not found.");
@@ -147,11 +146,11 @@ public class ServerRescan extends WindowScreen {
             return;
         }
 
+        whitelistButton.set("Saving config");
+
         storedToken.writefile(loadedConfig.username, userDir);
         saveConfig();
 
-        whitelistButton.set("Starting...");
-        
         ProcessBuilder pb = new ProcessBuilder("node", "index.js");
         pb.directory(scriptFile.getParentFile());
         try {
@@ -178,8 +177,8 @@ public class ServerRescan extends WindowScreen {
     }
 
     private void loadConfig() {
-        String indexPath = "Re-ServerSeeker/scripts/index.js";
-        String configPath = "Re-ServerSeeker/scripts/config.json";
+        String indexPath = "Re-ServerSeeker/Re-Scanner/index.js";
+        String configPath = "Re-ServerSeeker/Re-Scanner/config.json";
         File scriptFile = new File(userDir, indexPath);
         if (!scriptFile.exists()) {
             whitelistButton.set("Failed to find config.");
@@ -196,7 +195,7 @@ public class ServerRescan extends WindowScreen {
     }
 
     private void saveConfig() {
-        String configPath = "Re-ServerSeeker/scripts/config.json";
+        String configPath = "Re-ServerSeeker/Re-Scanner/config.json";
         File configFile = new File(userDir, configPath);
 
         //set values with no settings here

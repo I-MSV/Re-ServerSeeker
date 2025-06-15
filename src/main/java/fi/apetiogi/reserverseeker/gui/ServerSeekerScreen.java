@@ -1,5 +1,9 @@
 package fi.apetiogi.reserverseeker.gui;
 
+import static fi.apetiogi.reserverseeker.ReServerSeeker.userDir;
+
+import java.io.File;
+
 import fi.apetiogi.reserverseeker.gui.Bot.ServerRescan;
 import fi.apetiogi.reserverseeker.utils.MultiplayerScreenUtil;
 import meteordevelopment.meteorclient.gui.GuiThemes;
@@ -21,7 +25,16 @@ public class ServerSeekerScreen extends WindowScreen {
         WHorizontalList widgetList = add(theme.horizontalList()).expandX().widget();
         WButton newServersButton = widgetList.add(this.theme.button("Find new servers")).expandX().widget();
         WButton findPlayersButton = widgetList.add(this.theme.button("Search players")).expandX().widget();
-        WButton experimentalButton = widgetList.add(this.theme.button("Rescan servers")).expandX().widget();
+
+        if (new File(userDir, "Re-Scanner").exists()) {
+            WButton experimentalButton = widgetList.add(this.theme.button("Rescan servers")).expandX().widget();
+
+            experimentalButton.action = () -> {
+                if (this.client == null) return;
+                this.client.setScreen(new ServerRescan(this.multiplayerScreen));
+            };
+        }
+
         WButton cleanUpServersButton = widgetList.add(this.theme.button("Clean up")).expandX().widget();
         newServersButton.action = () -> {
             if (this.client == null) return;
@@ -31,10 +44,7 @@ public class ServerSeekerScreen extends WindowScreen {
             if (this.client == null) return;
             this.client.setScreen(new FindPlayerScreen(this.multiplayerScreen));
         };
-        experimentalButton.action = () -> {
-            if (this.client == null) return;
-            this.client.setScreen(new ServerRescan(this.multiplayerScreen));
-        };
+
         cleanUpServersButton.action = () -> {
             if (this.client == null) return;
             clear();
