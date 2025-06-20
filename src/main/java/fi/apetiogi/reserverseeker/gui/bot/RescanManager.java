@@ -12,9 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 import fi.apetiogi.reserverseeker.gui.bot.ServerRescan.Config;
+import fi.apetiogi.reserverseeker.utils.MultiplayerScreenUtil;
 import meteordevelopment.meteorclient.gui.widgets.WLabel;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.systems.accounts.types.MicrosoftAccount;
+import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 
 @SuppressWarnings("unused")
 public class RescanManager {
@@ -90,7 +92,7 @@ public class RescanManager {
         return hash + "_mca-cache.json";
     }
 
-    public static void StartProcess(File scriptFile, MCAWrapper storedToken, Config config) {
+    public static void StartProcess(File scriptFile, MCAWrapper storedToken, Config config, MultiplayerScreen mpScreen) {
         String lastButtonText = processButton.getText();
         processButton.set("Cancel");
 
@@ -108,6 +110,7 @@ public class RescanManager {
 
                     ongoingProcess.waitFor();
                     ongoingProcess = null;
+                    MultiplayerScreenUtil.reloadServerList(mpScreen);
                     processButton.set(lastButtonText);
                     storedToken.clearFile(config.username, config.saveDirectory);
                 }
@@ -119,6 +122,7 @@ public class RescanManager {
         }
         catch (Exception e) {
             processLabel.set("Error:" + e.getMessage());
+            storedToken.clearFile(config.username, config.saveDirectory);
             System.err.println(e.getMessage());
         }
     }

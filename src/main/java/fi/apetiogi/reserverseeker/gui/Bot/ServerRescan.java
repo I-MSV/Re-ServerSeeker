@@ -44,6 +44,7 @@ public class ServerRescan extends WindowScreen {
         public Boolean crackedIntent = null;
         public boolean deleteOffline = true;
         public boolean ignoreRescanned = true;
+        public boolean deleteUnsupported = false;
     }
 
     public enum WhitelistIntent {
@@ -123,6 +124,14 @@ public class ServerRescan extends WindowScreen {
         .build()
     );
 
+    private final Setting<Boolean> deleteUnsupported = sg.add(new BoolSetting.Builder()
+        .name("delete-unsupported")
+        .description("Whether to delete unsupported server versions that can't be scanned")
+        .defaultValue(false)
+        .onChanged(bool -> { loadedConfig.deleteUnsupported = bool; })
+        .build()
+    );
+
 
     public ServerRescan(MultiplayerScreen multiplayerScreen) {
         super(GuiThemes.get(), "Server Rescan");
@@ -139,14 +148,6 @@ public class ServerRescan extends WindowScreen {
         settingsContainer.add(theme.settings(settings));
         
         noteLabel = add(theme.label(String.format("Note: This will use \"%s\" for joining", this.client.getSession().getUsername()))).padTop(50).widget();
-        WButton test = add(theme.button("Test")).expandX().widget();
-        test.action = () -> {
-            for (int i = 0; i < 10; i++) {
-                ServerInfo a = new ServerInfo("Re:SS " + i, "127.0.0.1:25565", ServerType.OTHER);
-                MultiplayerScreenUtil.addInfoToServerList(multiplayerScreen, a);
-            }
-        };
-
         add(theme.button("Reset all")).expandX().widget().action = this::resetSettings;
         rescanButton = add(theme.button("Rescan server list")).expandX().widget();
         rescanButton.action = () -> {
@@ -221,33 +222,7 @@ public class ServerRescan extends WindowScreen {
             return;
         }
 
-        RescanManager.StartProcess(scriptFile, storedToken, loadedConfig);
-        // ProcessBuilder pb = new ProcessBuilder("node", "index.js");
-        // pb.directory(scriptFile.getParentFile());
-        // try {
-        //     Process process = pb.start();
-        //     BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-        //     new Thread(() -> {
-        //         String line;
-        //         try {
-        //             while ((line = reader.readLine()) != null) {
-        //                 final String outputLine = line;
-        //                 rescanButton.set(outputLine);
-        //             }
-
-        //             process.waitFor();
-        //             storedToken.clearFile(loadedConfig.username, userDir);
-        //         }
-        //         catch (IOException | InterruptedException e) {
-        //             e.printStackTrace();
-        //         }
-        //     }).start();
-        // }
-        // catch (Exception e) {
-        //     rescanButton.set("Error:" + e.getMessage());
-        //     System.err.println(e.getMessage());
-        // }
+        RescanManager.StartProcess(scriptFile, storedToken, loadedConfig, multiplayerScreen);
     }
 
     private void loadConfig() {
@@ -260,6 +235,7 @@ public class ServerRescan extends WindowScreen {
             crackedSetting.set(CrackedIntent.fromBool(loadedConfig.crackedIntent));
             offlineSetting.set(loadedConfig.deleteOffline);
             ignoreRescanned.set(loadedConfig.ignoreRescanned);
+            deleteUnsupported.set(loadedConfig.deleteUnsupported);
         }
         catch (Exception e) {
             loadedConfig = new Config();
