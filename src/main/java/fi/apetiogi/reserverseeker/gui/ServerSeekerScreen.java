@@ -4,7 +4,7 @@ import static fi.apetiogi.reserverseeker.ReServerSeeker.userDir;
 
 import java.io.File;
 
-import fi.apetiogi.reserverseeker.gui.Bot.ServerRescan;
+import fi.apetiogi.reserverseeker.gui.bot.ServerRescan;
 import fi.apetiogi.reserverseeker.utils.MultiplayerScreenUtil;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;

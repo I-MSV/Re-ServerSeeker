@@ -8,6 +8,7 @@
     "ConnectScreenAccessor",
     "ConnectScreenMixin",
     "DisconnectedScreenMixin",
+    "ScreenMixin",
     "ServerEntryMixin",
     "SystemsMixin",
     "TitleScreenMixin"

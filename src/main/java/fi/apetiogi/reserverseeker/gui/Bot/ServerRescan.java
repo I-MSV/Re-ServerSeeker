@@ -1,19 +1,20 @@
-package fi.apetiogi.reserverseeker.gui.Bot;
+package fi.apetiogi.reserverseeker.gui.bot;
 
 import static fi.apetiogi.reserverseeker.ReServerSeeker.gson;
 import static fi.apetiogi.reserverseeker.ReServerSeeker.userDir;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import fi.apetiogi.reserverseeker.gui.Bot.MeteorToken.*;
+import fi.apetiogi.reserverseeker.gui.bot.RescanManager.*;
+import fi.apetiogi.reserverseeker.utils.MultiplayerScreenUtil;
 import meteordevelopment.meteorclient.gui.GuiThemes;
 import meteordevelopment.meteorclient.gui.WindowScreen;
 import meteordevelopment.meteorclient.gui.widgets.WLabel;
@@ -28,6 +29,8 @@ import meteordevelopment.meteorclient.systems.accounts.Account;
 import meteordevelopment.meteorclient.systems.accounts.Accounts;
 import meteordevelopment.meteorclient.systems.accounts.types.MicrosoftAccount;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
+import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.network.ServerInfo.ServerType;
 import net.minecraft.client.session.Session;
 import net.minecraft.nbt.NbtCompound;
 
@@ -40,6 +43,7 @@ public class ServerRescan extends WindowScreen {
         public Boolean whitelistIntent = null;
         public Boolean crackedIntent = null;
         public boolean deleteOffline = true;
+        public boolean ignoreRescanned = true;
     }
 
     public enum WhitelistIntent {
@@ -85,7 +89,7 @@ public class ServerRescan extends WindowScreen {
     WButton rescanButton;
     WLabel noteLabel;
     Config loadedConfig;
-    
+
     //yes i will keep using this enum everywhere.
     private final Setting<WhitelistIntent> whitelistSetting = sg.add(new EnumSetting.Builder<WhitelistIntent>()
         .name("whitelist-intent")
@@ -111,6 +115,14 @@ public class ServerRescan extends WindowScreen {
         .build()
     );
 
+    private final Setting<Boolean> ignoreRescanned = sg.add(new BoolSetting.Builder()
+        .name("ignore-rescanned")
+        .description("Whether to ignore servers already containing \"Whitelisted\" & \"Cracked\"")
+        .defaultValue(true)
+        .onChanged(bool -> { loadedConfig.ignoreRescanned = bool; })
+        .build()
+    );
+
 
     public ServerRescan(MultiplayerScreen multiplayerScreen) {
         super(GuiThemes.get(), "Server Rescan");
@@ -126,20 +138,41 @@ public class ServerRescan extends WindowScreen {
         settingsContainer = add(theme.verticalList()).widget();
         settingsContainer.add(theme.settings(settings));
         
-        noteLabel = add(theme.label(String.format("Note: This will use \"%s\" for joining", this.client.getSession().getUsername()))).widget();
-        
-        add(theme.button("Reset all")).expandX().widget().action = this::resetSettings;
-        rescanButton = add(theme.button("Rescan Server List")).expandX().widget();
-        rescanButton.action = () -> {
-            StartRescan();
+        noteLabel = add(theme.label(String.format("Note: This will use \"%s\" for joining", this.client.getSession().getUsername()))).padTop(50).widget();
+        WButton test = add(theme.button("Test")).expandX().widget();
+        test.action = () -> {
+            for (int i = 0; i < 10; i++) {
+                ServerInfo a = new ServerInfo("Re:SS " + i, "127.0.0.1:25565", ServerType.OTHER);
+                MultiplayerScreenUtil.addInfoToServerList(multiplayerScreen, a);
+            }
         };
+
+        add(theme.button("Reset all")).expandX().widget().action = this::resetSettings;
+        rescanButton = add(theme.button("Rescan server list")).expandX().widget();
+        rescanButton.action = () -> {
+            if (RescanManager.ongoingProcess != null) {
+                try {
+                    OutputStream stream = RescanManager.ongoingProcess.getOutputStream();
+                    stream.write("cancel".getBytes(StandardCharsets.UTF_8));
+                    stream.flush();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                StartRescan();
+            }
+        };
+
+        RescanManager.UpdateText(noteLabel, rescanButton);
     }
 
     private void StartRescan() {
         String indexPath = "Re-Scanner/index.js";
         File scriptFile = new File(userDir, indexPath);
         if (!scriptFile.exists()) {
-            rescanButton.set("Script not found.");
+            noteLabel.set("Script not found.");
             return;
         }
 
@@ -153,7 +186,7 @@ public class ServerRescan extends WindowScreen {
             for (Account<?> acc : Accounts.get()) {
                 String name = acc.getUsername();
                 if (name == session.getUsername() && acc instanceof MicrosoftAccount msAcc) {
-                    storedToken.mca.access_token = MeteorToken.getAccessToken(msAcc);
+                    storedToken.mca.access_token = RescanManager.getAccessToken(msAcc);
                     loadedConfig.username = name;
                     found = true;
                     break;
@@ -161,48 +194,60 @@ public class ServerRescan extends WindowScreen {
             }
 
             if (!found) {
-                rescanButton.set("Failed to find logged microsoft account");
+                noteLabel.set("Failed to find logged microsoft account");
                 return;
             }
         }
 
         else {
-            noteLabel.set("Scanning without online account, disabling whitelist check");
+            if (whitelistSetting.get() != WhitelistIntent.Nothing) {
+                whitelistSetting.set(WhitelistIntent.Nothing);
+                noteLabel.set("Using offline account, disabling whitelist check");
+            }
             loadedConfig.username = session.getUsername();
-            whitelistSetting.set(WhitelistIntent.Nothing);
         }
-
-        rescanButton.set("Saving config");
-
+        
+        noteLabel.set("Saving config");
+        
         storedToken.writeFile(loadedConfig.username, userDir);
         saveConfig();
-
-        ProcessBuilder pb = new ProcessBuilder("node", "index.js");
-        pb.directory(scriptFile.getParentFile());
-        try {
-            Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         
-            new Thread(() -> {
-                String line;
-                try {
-                    while ((line = reader.readLine()) != null) {
-                        final String outputLine = line;
-                        rescanButton.set(outputLine);
-                    }
+        //even though we changed it earlier, it
+        //has to be reloaded only after saving the config
+        reload();
 
-                    process.waitFor();
-                    storedToken.clearFile(loadedConfig.username, userDir);
-                }
-                catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }).start();
+        if (whitelistSetting.get() == WhitelistIntent.Nothing && crackedSetting.get() == CrackedIntent.Nothing) {
+            noteLabel.set("Can't scan with both intents disabled");
+            return;
         }
-        catch (Exception e) {
-            rescanButton.set("Error:" + e.getMessage());
-            System.err.println(e.getMessage());
-        }
+
+        RescanManager.StartProcess(scriptFile, storedToken, loadedConfig);
+        // ProcessBuilder pb = new ProcessBuilder("node", "index.js");
+        // pb.directory(scriptFile.getParentFile());
+        // try {
+        //     Process process = pb.start();
+        //     BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+        //     new Thread(() -> {
+        //         String line;
+        //         try {
+        //             while ((line = reader.readLine()) != null) {
+        //                 final String outputLine = line;
+        //                 rescanButton.set(outputLine);
+        //             }
+
+        //             process.waitFor();
+        //             storedToken.clearFile(loadedConfig.username, userDir);
+        //         }
+        //         catch (IOException | InterruptedException e) {
+        //             e.printStackTrace();
+        //         }
+        //     }).start();
+        // }
+        // catch (Exception e) {
+        //     rescanButton.set("Error:" + e.getMessage());
+        //     System.err.println(e.getMessage());
+        // }
     }
 
     private void loadConfig() {
@@ -214,6 +259,7 @@ public class ServerRescan extends WindowScreen {
             whitelistSetting.set(WhitelistIntent.fromBool(loadedConfig.whitelistIntent));
             crackedSetting.set(CrackedIntent.fromBool(loadedConfig.crackedIntent));
             offlineSetting.set(loadedConfig.deleteOffline);
+            ignoreRescanned.set(loadedConfig.ignoreRescanned);
         }
         catch (Exception e) {
             loadedConfig = new Config();

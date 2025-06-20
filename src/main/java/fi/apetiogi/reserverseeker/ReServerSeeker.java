@@ -56,6 +56,7 @@ public class ReServerSeeker extends MeteorAddon {
         MeteorClient.EVENT_BUS.subscribe(new ConnectionTracker());
         MeteorClient.EVENT_BUS.subscribe(HistoricPlayersUpdater.class);
     }
+    
     @Override
     public void onRegisterCategories() {
         Modules.registerCategory(CATEGORY);
