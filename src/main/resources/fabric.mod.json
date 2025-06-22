@@ -3,9 +3,10 @@
   "id": "reserverseeker",
   "version": "${version}",
   "name": "Re:ServerSeeker",
-  "description": "Rework for goated server seeker that got removed... It's worse in every way but at least it works",
+  "description": "Rework of original ServerSeeker with more features",
   "authors": [
     "DAMcraft",
+    "Cornbread2100",
     "ApetiogiDISASTER"
   ],
   "contact": {

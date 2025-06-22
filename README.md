@@ -1,2 +1,5 @@
-<h1 align="center"> Re:ServerSeeker addon for meteor </h1>
-<h3 align="center"> Remade (Copied) using a different API & small adjustments</h3>
+<div align="center">
+<h1> Re:ServerSeeker addon for meteor </h1>
+<h3> Rework of <a href="https://github.com/DAMcraft/MeteorServerSeeker/">ServerSeeker</a> using a different API & small adjustments</h3>
+<h3><a href="a">Official API server</a></h3>
+</div>
