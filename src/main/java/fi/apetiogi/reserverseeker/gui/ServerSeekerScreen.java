@@ -22,10 +22,12 @@ public class ServerSeekerScreen extends WindowScreen {
     
     @Override
     public void initWidgets() {
+        boolean folderExists = new File(userDir, "Re-Scanner").exists();
         WHorizontalList widgetList = add(theme.horizontalList()).expandX().widget();
         WButton newServersButton = widgetList.add(this.theme.button("Find new servers")).expandX().widget();
         WButton findPlayersButton = widgetList.add(this.theme.button("Search players")).expandX().widget();
-        WButton experimentalButton = widgetList.add(this.theme.button("Rescan servers")).expandX().widget();
+        WButton experimentalButton = this.theme.button("Rescan servers");
+        if (folderExists) widgetList.add(experimentalButton).expandX().widget();
         WButton cleanUpServersButton = widgetList.add(this.theme.button("Clean up")).expandX().widget();
 
         newServersButton.action = () -> {
@@ -41,7 +43,6 @@ public class ServerSeekerScreen extends WindowScreen {
             if (this.client == null) return;
             this.client.setScreen(new ServerRescan(this.multiplayerScreen));
         };
-        experimentalButton.visible = new File(userDir, "Re-Scanner").exists();
 
         cleanUpServersButton.action = () -> {
             if (this.client == null) return;
