@@ -59,7 +59,14 @@ public abstract class ConnectScreenMixin extends Screen {
                 //I genuinely don't even know why this exists atp
                 //Could add some text here one day
                 Text title_text = Text.literal("Force disconnected");
-                this.connection.disconnect(title_text);
+                if (this.connection != null) {
+                    this.connection.disconnect(title_text);
+                }
+                else {
+                    ConnectScreenAccessor access = (ConnectScreenAccessor)(Object)this;
+                    access.setConnectingCancelled(true);
+                    this.client.setScreen(new DisconnectedScreen(new MultiplayerScreen(null), title_text, Text.literal("")));
+                }
             }
         )
         .position(cancelButton.getX(), cancelButton.getY())
